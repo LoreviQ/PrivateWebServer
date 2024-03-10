@@ -16,3 +16,8 @@ func (cfg *apiConfig) metricsReportingHandler(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Status", "200 OK")
 	w.Write([]byte(fmt.Sprintf("Hits: %v", cfg.fileserverHits)))
 }
+
+func (cfg *apiConfig) metricsResetHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Status", "200 OK")
+	cfg.fileserverHits = 0
+}
