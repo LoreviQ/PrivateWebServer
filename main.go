@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 )
@@ -10,10 +9,9 @@ func main() {
 	const filepathRoot = "."
 	const port = "8080"
 
-	db := initialiseDatabase("./database/database.json")
+	initialiseDatabase("./database/database.json")
 	mux := http.NewServeMux()
 	cfg := apiConfig{fileserverHits: 0}
-	fmt.Print(db)
 
 	mux.Handle("/app/*", http.StripPrefix("/app", cfg.metricsIncMiddleware(http.FileServer(http.Dir(filepathRoot)))))
 	mux.HandleFunc("GET /api/healthz", healthzHandler)
