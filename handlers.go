@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
+	"strings"
 )
 
 func healthzHandler(w http.ResponseWriter, r *http.Request) {
@@ -39,17 +41,26 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if len(chirp.Body) <= 140 {
-		writeValidated(w)
+		writeValidated(w, chirp.Body)
 	} else {
 		writeError(w)
 	}
 }
 
-func writeValidated(w http.ResponseWriter) {
+func writeValidated(w http.ResponseWriter, body string) {
 	type ReturnVals struct {
-		Valid bool `json:"valid"`
+		Body string `json:"cleaned_body"`
 	}
-	data, err := json.Marshal(ReturnVals{Valid: true})
+	badWords := []string{"kerfuffle", "sharbert", "fornax"}
+	words := strings.Split(body, " ")
+	for i, word := range words {
+		if slices.Contains(badWords, strings.ToLower(word)) {
+			words[i] = "****"
+		}
+
+	}
+
+	data, err := json.Marshal(ReturnVals{Body: strings.Join(words, " ")})
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
 		w.WriteHeader(500)
