@@ -11,7 +11,7 @@ import (
 type Database struct {
 	dbPath string        `json:"-"`
 	Chirps map[int]Chirp `json:"chirps"`
-	mu     sync.RWMutex  `json:"-"`
+	mu     *sync.RWMutex `json:"-"`
 }
 
 type Chirp struct {
@@ -19,8 +19,12 @@ type Chirp struct {
 	Body string `json:"body"`
 }
 
-func initialiseDatabase(dbPath string) *Database {
-	db := Database{dbPath: dbPath}
+func initialiseDatabase(dbPath string) Database {
+	db := Database{
+		dbPath: dbPath,
+		Chirps: make(map[int]Chirp),
+		mu:     &sync.RWMutex{},
+	}
 	err := db.ensureDB()
 	if err != nil {
 		log.Fatal(err)
@@ -29,7 +33,7 @@ func initialiseDatabase(dbPath string) *Database {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &db
+	return db
 }
 
 func (db *Database) createChirp(chirpText string) (Chirp, error) {
