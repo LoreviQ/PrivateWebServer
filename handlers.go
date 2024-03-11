@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -38,6 +39,29 @@ func (db *Database) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func (db *Database) getChirpByIDHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		writeError(w, 400, "Invalid ID")
+		return
+	}
+	chirp, ok := db.Chirps[id]
+	if !ok {
+		writeError(w, 404, "No Chirp by that ID")
+		return
+	}
+	data, err := json.Marshal(chirp)
+	if err != nil {
+		log.Printf("Error marshalling JSON: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
@@ -58,7 +82,7 @@ func (db *Database) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	if len(requestBody.Body) <= 140 {
 		db.writeValidated(w, requestBody.Body)
 	} else {
-		writeError(w)
+		writeError(w, 400, "Chirp is too long")
 	}
 }
 
@@ -86,16 +110,16 @@ func (db *Database) writeValidated(w http.ResponseWriter, body string) {
 	w.Write(data)
 }
 
-func writeError(w http.ResponseWriter) {
+func writeError(w http.ResponseWriter, errorCode int, errorText string) {
 	type ReturnVals struct {
 		Error string `json:"error"`
 	}
-	data, err := json.Marshal(ReturnVals{Error: "Chirp is too long"})
+	data, err := json.Marshal(ReturnVals{Error: errorText})
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
 		w.WriteHeader(500)
 		return
 	}
-	w.WriteHeader(400)
+	w.WriteHeader(errorCode)
 	w.Write(data)
 }
