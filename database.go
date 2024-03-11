@@ -9,17 +9,17 @@ import (
 )
 
 type Database struct {
-	dbPath string         `json:"-"`
-	Chirps map[int]chirps `json:"chirps"`
-	mu     *sync.RWMutex  `json:"-"`
+	dbPath string        `json:"-"`
+	Chirps map[int]Chirp `json:"chirps"`
+	mu     sync.RWMutex  `json:"-"`
 }
 
-type chirps struct {
+type Chirp struct {
 	ID   int    `json:"id"`
 	Body string `json:"body"`
 }
 
-func initialiseDatabase(dbPath string) Database {
+func initialiseDatabase(dbPath string) *Database {
 	db := Database{dbPath: dbPath}
 	err := db.ensureDB()
 	if err != nil {
@@ -29,11 +29,29 @@ func initialiseDatabase(dbPath string) Database {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return db
+	return &db
+}
+
+func (db *Database) createChirp(chirpText string) (Chirp, error) {
+	db.mu.Lock()
+	id := len(db.Chirps) + 1
+	db.Chirps[id] = Chirp{
+		ID:   id,
+		Body: chirpText,
+	}
+	db.mu.Unlock()
+	err := db.writeDB()
+	if err != nil {
+		var zeroVal Chirp
+		return zeroVal, err
+	}
+	return db.Chirps[id], err
 }
 
 func (db *Database) ensureDB() error {
+	db.mu.RLock()
 	_, err := os.ReadFile(db.dbPath)
+	db.mu.RUnlock()
 	if errors.Is(err, os.ErrNotExist) {
 		err = db.writeDB()
 	}
@@ -41,20 +59,22 @@ func (db *Database) ensureDB() error {
 }
 
 func (db *Database) loadDB() error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.mu.RLock()
 	data, err := os.ReadFile(db.dbPath)
+	db.mu.RUnlock()
 	if err != nil {
 		return err
 	}
+	db.mu.Lock()
 	err = json.Unmarshal(data, &db)
+	db.mu.Unlock()
 	return err
 }
 
 func (db *Database) writeDB() error {
 	db.mu.RLock()
-	defer db.mu.RUnlock()
 	data, err := json.Marshal(db)
+	db.mu.RUnlock()
 	if err != nil {
 		return err
 	}

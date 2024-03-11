@@ -26,13 +26,13 @@ func (cfg *apiConfig) metricsResetHandler(w http.ResponseWriter, r *http.Request
 	cfg.fileserverHits = 0
 }
 
-func postChirpHandler(w http.ResponseWriter, r *http.Request) {
-	type chirpS struct {
+func (db *Database) postChirpHandler(w http.ResponseWriter, r *http.Request) {
+	type request struct {
 		Body string `json:"body"`
 	}
 
-	chirp := chirpS{}
-	err := json.NewDecoder(r.Body).Decode(&chirp)
+	requestBody := request{}
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
 		w.WriteHeader(500)
@@ -40,27 +40,28 @@ func postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if len(chirp.Body) <= 140 {
-		writeValidated(w, chirp.Body)
+	if len(requestBody.Body) <= 140 {
+		db.writeValidated(w, requestBody.Body)
 	} else {
 		writeError(w)
 	}
 }
 
-func writeValidated(w http.ResponseWriter, body string) {
-	type ReturnVals struct {
-		Body string `json:"cleaned_body"`
-	}
+func (db *Database) writeValidated(w http.ResponseWriter, body string) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
+
 	words := strings.Split(body, " ")
 	for i, word := range words {
 		if slices.Contains(badWords, strings.ToLower(word)) {
 			words[i] = "****"
 		}
-
+	}
+	chirp, err := db.createChirp(strings.Join(words, " "))
+	if err != nil {
+		log.Printf("Error creating Chirp: %s", err)
 	}
 
-	data, err := json.Marshal(ReturnVals{Body: strings.Join(words, " ")})
+	data, err := json.Marshal(chirp)
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
 		w.WriteHeader(500)
