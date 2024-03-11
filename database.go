@@ -15,8 +15,8 @@ type Database struct {
 }
 
 type Chirp struct {
-	ID   int    `json:"id"`
 	Body string `json:"body"`
+	ID   int    `json:"id"`
 }
 
 func initialiseDatabase(dbPath string) Database {
