@@ -26,12 +26,12 @@ func (cfg *apiConfig) metricsResetHandler(w http.ResponseWriter, r *http.Request
 	cfg.fileserverHits = 0
 }
 
-func validateHandler(w http.ResponseWriter, r *http.Request) {
-	type Chirp struct {
+func postChirpHandler(w http.ResponseWriter, r *http.Request) {
+	type chirpS struct {
 		Body string `json:"body"`
 	}
 
-	chirp := Chirp{}
+	chirp := chirpS{}
 	err := json.NewDecoder(r.Body).Decode(&chirp)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
