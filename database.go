@@ -41,10 +41,19 @@ func (db *Database) ensureDB() error {
 }
 
 func (db *Database) loadDB() error {
-	return nil
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	data, err := os.ReadFile(db.dbPath)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, &db)
+	return err
 }
 
 func (db *Database) writeDB() error {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
 	data, err := json.Marshal(db)
 	if err != nil {
 		return err

@@ -1,1 +1,12 @@
-{"chirps":null}
+{
+    "chirps": {
+        "1": {
+            "id": 1,
+            "body": "This is the first chirp ever!"
+        },
+        "2": {
+            "id": 2,
+            "body": "Hello, world!"
+        }
+    }
+}
