@@ -26,6 +26,21 @@ func (cfg *apiConfig) metricsResetHandler(w http.ResponseWriter, r *http.Request
 	cfg.fileserverHits = 0
 }
 
+func (db *Database) getChirpHandler(w http.ResponseWriter, r *http.Request) {
+	chirps := make([]Chirp, len(db.Chirps))
+	for i, chirp := range db.Chirps {
+		chirps[i-1] = chirp
+	}
+	data, err := json.Marshal(chirps)
+	if err != nil {
+		log.Printf("Error marshalling JSON: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	w.WriteHeader(200)
+	w.Write(data)
+}
+
 func (db *Database) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type request struct {
 		Body string `json:"body"`
@@ -67,7 +82,7 @@ func (db *Database) writeValidated(w http.ResponseWriter, body string) {
 		w.WriteHeader(500)
 		return
 	}
-	w.WriteHeader(200)
+	w.WriteHeader(201)
 	w.Write(data)
 }
 
