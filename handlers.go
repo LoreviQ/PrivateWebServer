@@ -35,15 +35,7 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 	for i, chirp := range cfg.db.Chirps {
 		chirps[i-1] = chirp
 	}
-	data, err := json.Marshal(chirps)
-	if err != nil {
-		log.Printf("Error marshalling JSON: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	w.WriteHeader(200)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	writeResponse(w, 200, chirps)
 }
 
 func (cfg *apiConfig) getChirpByIDHandler(w http.ResponseWriter, r *http.Request) {
@@ -57,18 +49,11 @@ func (cfg *apiConfig) getChirpByIDHandler(w http.ResponseWriter, r *http.Request
 		writeError(w, 404, "No Chirp by that ID")
 		return
 	}
-	data, err := json.Marshal(chirp)
-	if err != nil {
-		log.Printf("Error marshalling JSON: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	w.WriteHeader(200)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	writeResponse(w, 200, chirp)
 }
 
 func (cfg *apiConfig) postChirpHandler(w http.ResponseWriter, r *http.Request) {
+	// REQUEST
 	type requestStruct struct {
 		Body string `json:"body"`
 	}
@@ -76,15 +61,26 @@ func (cfg *apiConfig) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+
+	// FUNCTION BODY
 	w.Header().Set("Content-Type", "application/json")
 	if len(request.Body) <= 140 {
-		cfg.writeValidatedChirp(w, request.Body)
+		chirp, err := cfg.validateChirp(request.Body)
+		if err != nil {
+			log.Printf("Error validating chirp: %s", err)
+			w.WriteHeader(500)
+			return
+		}
+
+		// RESPONSE
+		writeResponse(w, 201, chirp)
 	} else {
 		writeError(w, 400, "Chirp is too long")
 	}
 }
 
 func (cfg *apiConfig) postUserHandler(w http.ResponseWriter, r *http.Request) {
+	// REQUEST
 	type requestStruct struct {
 		Password string `json:"password"`
 		Email    string `json:"email"`
@@ -94,6 +90,7 @@ func (cfg *apiConfig) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// FUNCTION BODY
 	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), 10)
 	if err != nil {
 		log.Printf("Error Generating password hash: %s", err)
@@ -110,26 +107,19 @@ func (cfg *apiConfig) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type Response struct {
+	// RESPONSE
+	type responseStruct struct {
 		Email string `json:"email"`
 		ID    int    `json:"id"`
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	data, err := json.Marshal(Response{
+	writeResponse(w, 201, responseStruct{
 		Email: user.Email,
 		ID:    user.ID,
 	})
-	if err != nil {
-		log.Printf("Error marshalling JSON: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	w.WriteHeader(201)
-	w.Write(data)
 }
 
 func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
+	// REQUEST
 	type requestStruct struct {
 		Password string `json:"password"`
 		Email    string `json:"email"`
@@ -140,6 +130,7 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// FUNCTION BODY
 	user, err := cfg.db.authenticateUser(request.Email, []byte(request.Password))
 	if errors.Is(err, ErrInvalidEmail) {
 		writeError(w, 404, "No user with this email")
@@ -153,26 +144,18 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type Response struct {
+	// RESPONSE
+	type responseStruct struct {
 		Email string `json:"email"`
 		ID    int    `json:"id"`
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	data, err := json.Marshal(Response{
+	writeResponse(w, 200, responseStruct{
 		Email: user.Email,
 		ID:    user.ID,
 	})
-	if err != nil {
-		log.Printf("Error marshalling JSON: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	w.WriteHeader(200)
-	w.Write(data)
 }
 
-func (cfg *apiConfig) writeValidatedChirp(w http.ResponseWriter, body string) {
+func (cfg *apiConfig) validateChirp(body string) (Chirp, error) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 
 	words := strings.Split(body, " ")
@@ -182,21 +165,22 @@ func (cfg *apiConfig) writeValidatedChirp(w http.ResponseWriter, body string) {
 		}
 	}
 	chirp, err := cfg.db.createChirp(strings.Join(words, " "))
-	if err != nil {
-		log.Printf("Error creating Chirp: %s", err)
-	}
+	return chirp, err
+}
 
-	data, err := json.Marshal(chirp)
+func writeResponse[T any](w http.ResponseWriter, responseCode int, body T) {
+	w.Header().Set("Content-Type", "application/json")
+	data, err := json.Marshal(body)
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
 		w.WriteHeader(500)
 		return
 	}
-	w.WriteHeader(201)
+	w.WriteHeader(responseCode)
 	w.Write(data)
 }
 
-func writeError(w http.ResponseWriter, errorCode int, errorText string) {
+func writeError(w http.ResponseWriter, responseCode int, errorText string) {
 	type ReturnVals struct {
 		Error string `json:"error"`
 	}
@@ -206,7 +190,7 @@ func writeError(w http.ResponseWriter, errorCode int, errorText string) {
 		w.WriteHeader(500)
 		return
 	}
-	w.WriteHeader(errorCode)
+	w.WriteHeader(responseCode)
 	w.Write(data)
 }
 
