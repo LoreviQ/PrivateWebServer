@@ -104,6 +104,7 @@ func (db *Database) authenticateUser(email string, password []byte) (User, error
 	if err != nil {
 		return User{}, ErrIncorrectPassword
 	}
+
 	return db.Users[id], nil
 }
 

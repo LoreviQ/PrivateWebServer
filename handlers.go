@@ -30,9 +30,9 @@ func (cfg *apiConfig) metricsResetHandler(w http.ResponseWriter, r *http.Request
 	cfg.fileserverHits = 0
 }
 
-func (db *Database) getChirpHandler(w http.ResponseWriter, r *http.Request) {
-	chirps := make([]Chirp, len(db.Chirps))
-	for i, chirp := range db.Chirps {
+func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
+	chirps := make([]Chirp, len(cfg.db.Chirps))
+	for i, chirp := range cfg.db.Chirps {
 		chirps[i-1] = chirp
 	}
 	data, err := json.Marshal(chirps)
@@ -46,13 +46,13 @@ func (db *Database) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func (db *Database) getChirpByIDHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) getChirpByIDHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		writeError(w, 400, "Invalid ID")
 		return
 	}
-	chirp, ok := db.Chirps[id]
+	chirp, ok := cfg.db.Chirps[id]
 	if !ok {
 		writeError(w, 404, "No Chirp by that ID")
 		return
@@ -68,7 +68,7 @@ func (db *Database) getChirpByIDHandler(w http.ResponseWriter, r *http.Request) 
 	w.Write(data)
 }
 
-func (db *Database) postChirpHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type requestStruct struct {
 		Body string `json:"body"`
 	}
@@ -81,13 +81,13 @@ func (db *Database) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if len(request.Body) <= 140 {
-		db.writeValidatedChirp(w, request.Body)
+		cfg.writeValidatedChirp(w, request.Body)
 	} else {
 		writeError(w, 400, "Chirp is too long")
 	}
 }
 
-func (db *Database) postUserHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	type requestStruct struct {
 		Password string `json:"password"`
 		Email    string `json:"email"`
@@ -105,7 +105,7 @@ func (db *Database) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	user, err := db.addUser(request.Email, hash)
+	user, err := cfg.db.addUser(request.Email, hash)
 	if errors.Is(err, ErrTakenEmail) {
 		writeError(w, 400, "This email has already been taken")
 		return
@@ -134,7 +134,7 @@ func (db *Database) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func (db *Database) postLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	type requestStruct struct {
 		Password string `json:"password"`
 		Email    string `json:"email"`
@@ -149,7 +149,7 @@ func (db *Database) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.authenticateUser(request.Email, []byte(request.Password))
+	user, err := cfg.db.authenticateUser(request.Email, []byte(request.Password))
 	if errors.Is(err, ErrInvalidEmail) {
 		writeError(w, 404, "No user with this email")
 		return
@@ -181,7 +181,7 @@ func (db *Database) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func (db *Database) writeValidatedChirp(w http.ResponseWriter, body string) {
+func (cfg *apiConfig) writeValidatedChirp(w http.ResponseWriter, body string) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 
 	words := strings.Split(body, " ")
@@ -190,7 +190,7 @@ func (db *Database) writeValidatedChirp(w http.ResponseWriter, body string) {
 			words[i] = "****"
 		}
 	}
-	chirp, err := db.createChirp(strings.Join(words, " "))
+	chirp, err := cfg.db.createChirp(strings.Join(words, " "))
 	if err != nil {
 		log.Printf("Error creating Chirp: %s", err)
 	}

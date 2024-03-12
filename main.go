@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,21 +12,23 @@ import (
 type apiConfig struct {
 	port           string
 	dbDirectory    string
+	jwtSecret      string
 	fileserverHits int
+	db             Database
 }
 
-func initialiseServer(cfg apiConfig, db Database, mux *http.ServeMux) *http.Server {
+func initialiseServer(cfg apiConfig, mux *http.ServeMux) *http.Server {
 	const filepathRoot = "."
 
 	mux.Handle("/app/*", http.StripPrefix("/app", cfg.metricsIncMiddleware(http.FileServer(http.Dir(filepathRoot)))))
 	mux.HandleFunc("GET /api/healthz", healthzHandler)
 	mux.HandleFunc("GET /admin/metrics", cfg.metricsReportingHandler)
 	mux.HandleFunc("GET /api/reset", cfg.metricsResetHandler)
-	mux.HandleFunc("GET /api/chirps", db.getChirpHandler)
-	mux.HandleFunc("POST /api/chirps", db.postChirpHandler)
-	mux.HandleFunc("GET /api/chirps/{id}", db.getChirpByIDHandler)
-	mux.HandleFunc("POST /api/users", db.postUserHandler)
-	mux.HandleFunc("POST /api/login", db.postLoginHandler)
+	mux.HandleFunc("GET /api/chirps", cfg.getChirpHandler)
+	mux.HandleFunc("POST /api/chirps", cfg.postChirpHandler)
+	mux.HandleFunc("GET /api/chirps/{id}", cfg.getChirpByIDHandler)
+	mux.HandleFunc("POST /api/users", cfg.postUserHandler)
+	mux.HandleFunc("POST /api/login", cfg.postLoginHandler)
 
 	corsMux := corsMiddleware(mux)
 
@@ -50,19 +51,16 @@ func (cfg *apiConfig) handleFlags() {
 
 func main() {
 	godotenv.Load()
-	jwtSecret := os.Getenv("JWT_SECRET")
-	fmt.Println(jwtSecret)
-	fmt.Println(len(jwtSecret))
-
 	cfg := apiConfig{
 		port:           "8080",
 		dbDirectory:    "./database/database.json",
+		jwtSecret:      os.Getenv("JWT_SECRET"),
 		fileserverHits: 0,
 	}
 	cfg.handleFlags()
-	db := initialiseDatabase(cfg.dbDirectory)
+	cfg.db = initialiseDatabase(cfg.dbDirectory)
 	mux := http.NewServeMux()
-	server := initialiseServer(cfg, db, mux)
+	server := initialiseServer(cfg, mux)
 
 	log.Printf("Serving on port: %s\n", cfg.port)
 	log.Panic(server.ListenAndServe())
