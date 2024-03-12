@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -105,21 +106,24 @@ func (db *Database) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := db.addUser(request.Email, hash)
-	if err != nil {
-		log.Printf("Error creating User: %s", err)
+	if errors.Is(err, ErrTakenEmail) {
+		writeError(w, 400, "This email has already been taken")
+		return
+	} else if err != nil {
+		log.Printf("Error Adding user: %s", err)
 		w.WriteHeader(500)
 		return
 	}
 
 	type Response struct {
-		ID    int    `json:"id"`
 		Email string `json:"email"`
+		ID    int    `json:"id"`
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	data, err := json.Marshal(Response{
-		ID:    user.ID,
 		Email: user.Email,
+		ID:    user.ID,
 	})
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
@@ -127,6 +131,52 @@ func (db *Database) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(201)
+	w.Write(data)
+}
+
+func (db *Database) postLoginHandler(w http.ResponseWriter, r *http.Request) {
+	type requestStruct struct {
+		Password string `json:"password"`
+		Email    string `json:"email"`
+	}
+	request := requestStruct{}
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	user, err := db.authenticateUser(request.Email, []byte(request.Password))
+	if errors.Is(err, ErrInvalidEmail) {
+		writeError(w, 404, "No user with this email")
+		return
+	} else if errors.Is(err, ErrIncorrectPassword) {
+		writeError(w, 401, "Incorrect Password")
+		return
+	} else if err != nil {
+		log.Printf("Error Authenticating User: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	type Response struct {
+		Email string `json:"email"`
+		ID    int    `json:"id"`
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	data, err := json.Marshal(Response{
+		Email: user.Email,
+		ID:    user.ID,
+	})
+	if err != nil {
+		log.Printf("Error marshalling JSON: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	w.WriteHeader(200)
 	w.Write(data)
 }
 
