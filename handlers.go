@@ -72,11 +72,8 @@ func (cfg *apiConfig) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type requestStruct struct {
 		Body string `json:"body"`
 	}
-	request := requestStruct{}
-	err := json.NewDecoder(r.Body).Decode(&request)
+	request, err := decodeRequest(w, r, requestStruct{})
 	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -92,13 +89,11 @@ func (cfg *apiConfig) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 		Email    string `json:"email"`
 	}
-	request := requestStruct{}
-	err := json.NewDecoder(r.Body).Decode(&request)
+	request, err := decodeRequest(w, r, requestStruct{})
 	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
 		return
 	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), 10)
 	if err != nil {
 		log.Printf("Error Generating password hash: %s", err)
@@ -140,12 +135,8 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Timeout  int    `json:"expires_in_seconds"`
 	}
-	request := requestStruct{}
-
-	err := json.NewDecoder(r.Body).Decode(&request)
+	request, err := decodeRequest(w, r, requestStruct{})
 	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
 		return
 	}
 
@@ -217,4 +208,16 @@ func writeError(w http.ResponseWriter, errorCode int, errorText string) {
 	}
 	w.WriteHeader(errorCode)
 	w.Write(data)
+}
+
+func decodeRequest[T any](w http.ResponseWriter, r *http.Request, _ T) (T, error) {
+	var request T
+	var zeroVal T
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+		w.WriteHeader(500)
+		return zeroVal, err
+	}
+	return request, nil
 }
