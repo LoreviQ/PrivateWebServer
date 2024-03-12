@@ -1,17 +1,20 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"os"
 )
 
-func main() {
-	const filepathRoot = "."
-	const port = "8080"
+type apiConfig struct {
+	port           string
+	dbDirectory    string
+	fileserverHits int
+}
 
-	db := initialiseDatabase("./database/database.json")
-	mux := http.NewServeMux()
-	cfg := apiConfig{fileserverHits: 0}
+func initialiseServer(cfg apiConfig, db Database, mux *http.ServeMux) *http.Server {
+	const filepathRoot = "."
 
 	mux.Handle("/app/*", http.StripPrefix("/app", cfg.metricsIncMiddleware(http.FileServer(http.Dir(filepathRoot)))))
 	mux.HandleFunc("GET /api/healthz", healthzHandler)
@@ -25,10 +28,33 @@ func main() {
 	corsMux := corsMiddleware(mux)
 
 	server := &http.Server{
-		Addr:    ":" + port,
+		Addr:    ":" + cfg.port,
 		Handler: corsMux,
 	}
+	return server
+}
 
-	log.Printf("Serving on port: %s\n", port)
-	log.Fatal(server.ListenAndServe())
+func (cfg *apiConfig) handleFlags() {
+	dbg := flag.Bool("debug", false, "Enable debug mode")
+	flag.Parse()
+	if *dbg {
+		log.Printf("Entering debug mode\n")
+		cfg.dbDirectory = "./database/debugDB.json"
+		os.Remove(cfg.dbDirectory)
+	}
+}
+
+func main() {
+	cfg := apiConfig{
+		port:           "8080",
+		dbDirectory:    "./database/database.json",
+		fileserverHits: 0,
+	}
+	cfg.handleFlags()
+	db := initialiseDatabase(cfg.dbDirectory)
+	mux := http.NewServeMux()
+	server := initialiseServer(cfg, db, mux)
+
+	log.Printf("Serving on port: %s\n", cfg.port)
+	log.Panic(server.ListenAndServe())
 }

@@ -34,11 +34,11 @@ func initialiseDatabase(dbPath string) Database {
 	}
 	err := db.ensureDB()
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	err = db.loadDB()
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	return db
 }
@@ -78,6 +78,7 @@ func (db *Database) addUser(email string) (User, error) {
 func (db *Database) ensureDB() error {
 	db.mu.RLock()
 	_, err := os.ReadFile(db.dbPath)
+
 	db.mu.RUnlock()
 	if errors.Is(err, os.ErrNotExist) {
 		err = db.writeDB()
@@ -105,6 +106,6 @@ func (db *Database) writeDB() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile("database/database.json", data, 0777)
+	err = os.WriteFile(db.dbPath, data, 0777)
 	return err
 }
