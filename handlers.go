@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func healthzHandler(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +88,8 @@ func (db *Database) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 
 func (db *Database) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	type requestStruct struct {
-		Email string `json:"email"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	request := requestStruct{}
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -95,14 +98,29 @@ func (db *Database) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-
-	user, err := db.addUser(request.Email)
+	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), 10)
+	if err != nil {
+		log.Printf("Error Generating password hash: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	user, err := db.addUser(request.Email, hash)
 	if err != nil {
 		log.Printf("Error creating User: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	type Response struct {
+		ID    int    `json:"id"`
+		Email string `json:"email"`
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	data, err := json.Marshal(user)
+	data, err := json.Marshal(Response{
+		ID:    user.ID,
+		Email: user.Email,
+	})
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
 		w.WriteHeader(500)

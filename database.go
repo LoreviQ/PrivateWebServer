@@ -21,8 +21,9 @@ type Chirp struct {
 }
 
 type User struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
+	ID           int    `json:"id"`
+	Email        string `json:"email"`
+	PasswordHash []byte `json:"hash"`
 }
 
 func initialiseDatabase(dbPath string) Database {
@@ -59,12 +60,13 @@ func (db *Database) createChirp(chirpText string) (Chirp, error) {
 	return db.Chirps[id], err
 }
 
-func (db *Database) addUser(email string) (User, error) {
+func (db *Database) addUser(email string, hash []byte) (User, error) {
 	db.mu.Lock()
 	id := len(db.Users) + 1
 	db.Users[id] = User{
-		ID:    id,
-		Email: email,
+		ID:           id,
+		Email:        email,
+		PasswordHash: hash,
 	}
 	db.mu.Unlock()
 	err := db.writeDB()
