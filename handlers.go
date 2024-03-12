@@ -9,7 +9,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -129,8 +131,11 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	if request.Timeout == 0 || request.Timeout > 86400 {
+		request.Timeout = 86400
+	}
 
-	// FUNCTION BODY
+	// AUTHENTICATE USER
 	user, err := cfg.db.authenticateUser(request.Email, []byte(request.Password))
 	if errors.Is(err, ErrInvalidEmail) {
 		writeError(w, 404, "No user with this email")
@@ -144,14 +149,31 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// CREATE JWT TOKEN
+	claims := jwt.RegisteredClaims{
+		Issuer:    "chirpy",
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * time.Duration(request.Timeout))),
+		Subject:   fmt.Sprint(user.ID),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString(cfg.jwtSecret)
+	if err != nil {
+		log.Printf("Error Creating Token: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
 	// RESPONSE
 	type responseStruct struct {
-		Email string `json:"email"`
 		ID    int    `json:"id"`
+		Email string `json:"email"`
+		Token string `json:"token"`
 	}
 	writeResponse(w, 200, responseStruct{
 		Email: user.Email,
 		ID:    user.ID,
+		Token: signedToken,
 	})
 }
 
@@ -166,6 +188,18 @@ func (cfg *apiConfig) validateChirp(body string) (Chirp, error) {
 	}
 	chirp, err := cfg.db.createChirp(strings.Join(words, " "))
 	return chirp, err
+}
+
+func decodeRequest[T any](w http.ResponseWriter, r *http.Request, _ T) (T, error) {
+	var request T
+	var zeroVal T
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+		w.WriteHeader(500)
+		return zeroVal, err
+	}
+	return request, nil
 }
 
 func writeResponse[T any](w http.ResponseWriter, responseCode int, body T) {
@@ -192,16 +226,4 @@ func writeError(w http.ResponseWriter, responseCode int, errorText string) {
 	}
 	w.WriteHeader(responseCode)
 	w.Write(data)
-}
-
-func decodeRequest[T any](w http.ResponseWriter, r *http.Request, _ T) (T, error) {
-	var request T
-	var zeroVal T
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
-		return zeroVal, err
-	}
-	return request, nil
 }

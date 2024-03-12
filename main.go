@@ -12,7 +12,7 @@ import (
 type apiConfig struct {
 	port           string
 	dbDirectory    string
-	jwtSecret      string
+	jwtSecret      []byte
 	fileserverHits int
 	db             Database
 }
@@ -54,7 +54,7 @@ func main() {
 	cfg := apiConfig{
 		port:           "8080",
 		dbDirectory:    "./database/database.json",
-		jwtSecret:      os.Getenv("JWT_SECRET"),
+		jwtSecret:      []byte(os.Getenv("JWT_SECRET")),
 		fileserverHits: 0,
 	}
 	cfg.handleFlags()
