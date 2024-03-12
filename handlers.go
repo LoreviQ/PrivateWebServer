@@ -138,6 +138,7 @@ func (db *Database) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	type requestStruct struct {
 		Password string `json:"password"`
 		Email    string `json:"email"`
+		Timeout  int    `json:"expires_in_seconds"`
 	}
 	request := requestStruct{}
 

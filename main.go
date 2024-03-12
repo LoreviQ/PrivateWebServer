@@ -2,9 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type apiConfig struct {
@@ -46,6 +49,11 @@ func (cfg *apiConfig) handleFlags() {
 }
 
 func main() {
+	godotenv.Load()
+	jwtSecret := os.Getenv("JWT_SECRET")
+	fmt.Println(jwtSecret)
+	fmt.Println(len(jwtSecret))
+
 	cfg := apiConfig{
 		port:           "8080",
 		dbDirectory:    "./database/database.json",
