@@ -11,6 +11,7 @@ import (
 type Database struct {
 	dbPath string        `json:"-"`
 	Chirps map[int]Chirp `json:"chirps"`
+	Users  map[int]User  `json:"users"`
 	mu     *sync.RWMutex `json:"-"`
 }
 
@@ -19,10 +20,16 @@ type Chirp struct {
 	ID   int    `json:"id"`
 }
 
+type User struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+}
+
 func initialiseDatabase(dbPath string) Database {
 	db := Database{
 		dbPath: dbPath,
 		Chirps: make(map[int]Chirp),
+		Users:  make(map[int]User),
 		mu:     &sync.RWMutex{},
 	}
 	err := db.ensureDB()
@@ -50,6 +57,22 @@ func (db *Database) createChirp(chirpText string) (Chirp, error) {
 		return zeroVal, err
 	}
 	return db.Chirps[id], err
+}
+
+func (db *Database) addUser(email string) (User, error) {
+	db.mu.Lock()
+	id := len(db.Users) + 1
+	db.Users[id] = User{
+		ID:    id,
+		Email: email,
+	}
+	db.mu.Unlock()
+	err := db.writeDB()
+	if err != nil {
+		var zeroVal User
+		return zeroVal, err
+	}
+	return db.Users[id], err
 }
 
 func (db *Database) ensureDB() error {

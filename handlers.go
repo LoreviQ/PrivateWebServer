@@ -66,27 +66,53 @@ func (db *Database) getChirpByIDHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (db *Database) postChirpHandler(w http.ResponseWriter, r *http.Request) {
-	type request struct {
+	type requestStruct struct {
 		Body string `json:"body"`
 	}
+	request := requestStruct{}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		log.Printf("Error decoding parameters: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if len(request.Body) <= 140 {
+		db.writeValidatedChirp(w, request.Body)
+	} else {
+		writeError(w, 400, "Chirp is too long")
+	}
+}
 
-	requestBody := request{}
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+func (db *Database) postUserHandler(w http.ResponseWriter, r *http.Request) {
+	type requestStruct struct {
+		Email string `json:"email"`
+	}
+	request := requestStruct{}
+	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
 		w.WriteHeader(500)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if len(requestBody.Body) <= 140 {
-		db.writeValidated(w, requestBody.Body)
-	} else {
-		writeError(w, 400, "Chirp is too long")
+	user, err := db.addUser(request.Email)
+	if err != nil {
+		log.Printf("Error creating User: %s", err)
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	data, err := json.Marshal(user)
+	if err != nil {
+		log.Printf("Error marshalling JSON: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	w.WriteHeader(201)
+	w.Write(data)
 }
 
-func (db *Database) writeValidated(w http.ResponseWriter, body string) {
+func (db *Database) writeValidatedChirp(w http.ResponseWriter, body string) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 
 	words := strings.Split(body, " ")

@@ -20,6 +20,7 @@ func main() {
 	mux.HandleFunc("GET /api/chirps", db.getChirpHandler)
 	mux.HandleFunc("POST /api/chirps", db.postChirpHandler)
 	mux.HandleFunc("GET /api/chirps/{id}", db.getChirpByIDHandler)
+	mux.HandleFunc("POST /api/users", db.postUserHandler)
 
 	corsMux := corsMiddleware(mux)
 
