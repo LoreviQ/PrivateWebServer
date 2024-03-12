@@ -88,6 +88,21 @@ func (db *Database) addUser(email string, hash []byte) (User, error) {
 	return db.Users[id], err
 }
 
+func (db *Database) updateUser(id int, email string, hash []byte) (User, error) {
+	db.mu.Lock()
+	db.Users[id] = User{
+		ID:           id,
+		Email:        email,
+		PasswordHash: hash,
+	}
+	db.mu.Unlock()
+	err := db.writeDB()
+	if err != nil {
+		return User{}, err
+	}
+	return db.Users[id], err
+}
+
 func (db *Database) authenticateUser(email string, password []byte) (User, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()

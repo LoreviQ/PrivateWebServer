@@ -177,6 +177,63 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (cfg *apiConfig) putUserHandler(w http.ResponseWriter, r *http.Request) {
+	// CHECKING AUTHENTICATION
+	tokenString := strings.Split(r.Header.Get("Authorization"), " ")[1]
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return cfg.jwtSecret, nil
+	})
+	if err != nil || !token.Valid {
+		writeError(w, 401, "Inavlid Token. Please log in again")
+		return
+	}
+	id, err := token.Claims.GetSubject()
+	if err != nil {
+		writeError(w, 401, "Inavlid Token. Please log in again")
+		return
+	}
+
+	// REQUEST
+	type requestStruct struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	request, err := decodeRequest(w, r, requestStruct{})
+	if err != nil {
+		return
+	}
+
+	// FUNCTION BODY
+	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), 10)
+	if err != nil {
+		log.Printf("Error generating password hash: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		log.Printf("Error parsing ID: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	user, err := cfg.db.updateUser(idInt, request.Email, hash)
+	if err != nil {
+		log.Printf("Error updating user: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	// RESPONSE
+	type responseStruct struct {
+		Email string `json:"email"`
+		ID    int    `json:"id"`
+	}
+	writeResponse(w, 200, responseStruct{
+		Email: user.Email,
+		ID:    user.ID,
+	})
+}
+
 func (cfg *apiConfig) validateChirp(body string) (Chirp, error) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 

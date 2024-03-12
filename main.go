@@ -28,6 +28,7 @@ func initialiseServer(cfg apiConfig, mux *http.ServeMux) *http.Server {
 	mux.HandleFunc("POST /api/chirps", cfg.postChirpHandler)
 	mux.HandleFunc("GET /api/chirps/{id}", cfg.getChirpByIDHandler)
 	mux.HandleFunc("POST /api/users", cfg.postUserHandler)
+	mux.HandleFunc("PUT /api/users", cfg.putUserHandler)
 	mux.HandleFunc("POST /api/login", cfg.postLoginHandler)
 
 	corsMux := corsMiddleware(mux)
