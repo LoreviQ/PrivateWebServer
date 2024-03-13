@@ -242,6 +242,16 @@ func (cfg *apiConfig) postRefreshHandler(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+func (cfg *apiConfig) postRevokeHandler(w http.ResponseWriter, r *http.Request) {
+	err := auth.RevokeRefreshToken(r, cfg.db)
+	if err != nil {
+		log.Printf("Error Revoking Token: %s", err)
+		w.WriteHeader(500)
+	} else {
+		w.WriteHeader(200)
+	}
+}
+
 func (cfg *apiConfig) validateChirp(body string) (db.Chirp, error) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 
