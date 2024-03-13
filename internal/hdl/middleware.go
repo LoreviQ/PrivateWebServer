@@ -2,7 +2,7 @@ package hdl
 
 import "net/http"
 
-func (cfg *apiConfig) corsMiddleware(next http.Handler) http.Handler {
+func (cfg *ApiConfig) CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
@@ -15,9 +15,9 @@ func (cfg *apiConfig) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (cfg *apiConfig) metricsIncMiddleware(next http.Handler) http.Handler {
+func (cfg *ApiConfig) MetricsIncMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits++
+		cfg.FileserverHits++
 		next.ServeHTTP(w, r)
 	})
 }
