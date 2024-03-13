@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,8 +17,13 @@ func AuthenticateAccessToken(r *http.Request, secret []byte) (int, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
+
 	if err != nil || !token.Valid {
 		return 0, err
+	}
+	issuer, err := token.Claims.GetIssuer()
+	if err != nil || issuer != "chirpy-access" {
+		return 0, errors.New("invalid issuer")
 	}
 	id, err := token.Claims.GetSubject()
 	if err != nil {
