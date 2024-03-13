@@ -1,4 +1,4 @@
-package main
+package hdl
 
 import (
 	"encoding/json"
@@ -15,7 +15,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func healthzHandler(w http.ResponseWriter, r *http.Request) {
+type apiConfig struct {
+	port           string
+	dbDirectory    string
+	jwtSecret      []byte
+	fileserverHits int
+	db             db.Database
+}
+
+func (cfg *apiConfig) healthzHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("Status", "200 OK")
 	w.Write([]byte("OK"))

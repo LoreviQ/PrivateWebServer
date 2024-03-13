@@ -10,19 +10,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type apiConfig struct {
-	port           string
-	dbDirectory    string
-	jwtSecret      []byte
-	fileserverHits int
-	db             db.Database
-}
-
-func initialiseServer(cfg apiConfig, mux *http.ServeMux) *http.Server {
+func initialiseServer(cfg hdl.apiConfig, mux *http.ServeMux) *http.Server {
 	const filepathRoot = "."
 
 	mux.Handle("/app/*", http.StripPrefix("/app", cfg.metricsIncMiddleware(http.FileServer(http.Dir(filepathRoot)))))
-	mux.HandleFunc("GET /api/healthz", healthzHandler)
+	mux.HandleFunc("GET /api/healthz", cfg.healthzHandler)
 	mux.HandleFunc("GET /admin/metrics", cfg.metricsReportingHandler)
 	mux.HandleFunc("GET /api/reset", cfg.metricsResetHandler)
 	mux.HandleFunc("GET /api/chirps", cfg.getChirpHandler)
@@ -34,8 +26,9 @@ func initialiseServer(cfg apiConfig, mux *http.ServeMux) *http.Server {
 	mux.HandleFunc("POST /api/refresh", cfg.postRefreshHandler)
 	mux.HandleFunc("POST /api/revoke", cfg.postRevokeHandler)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.deleteChirpHandler)
+	//mux.HandleFunc("POST /api/polka/webhooks", cfg.postPolkaWebhookHandler)
 
-	corsMux := corsMiddleware(mux)
+	corsMux := cfg.corsMiddleware(mux)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.port,
@@ -44,7 +37,7 @@ func initialiseServer(cfg apiConfig, mux *http.ServeMux) *http.Server {
 	return server
 }
 
-func (cfg *apiConfig) handleFlags() {
+func (cfg *hdl.apiConfig) handleFlags() {
 	dbg := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
 	if *dbg {
@@ -56,7 +49,7 @@ func (cfg *apiConfig) handleFlags() {
 
 func main() {
 	godotenv.Load()
-	cfg := apiConfig{
+	cfg := hdl.apiConfig{
 		port:           "8080",
 		dbDirectory:    "./database/database.json",
 		jwtSecret:      []byte(os.Getenv("JWT_SECRET")),
