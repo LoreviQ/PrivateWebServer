@@ -55,6 +55,13 @@ func (cfg *apiConfig) getChirpByIDHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (cfg *apiConfig) postChirpHandler(w http.ResponseWriter, r *http.Request) {
+	// CHECKING AUTHENTICATION
+	id, err := auth.AuthenticateAccessToken(r, cfg.jwtSecret)
+	if err != nil {
+		writeError(w, 401, "Inavlid Token. Please log in again")
+		return
+	}
+
 	// REQUEST
 	type requestStruct struct {
 		Body string `json:"body"`
@@ -67,7 +74,7 @@ func (cfg *apiConfig) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	// FUNCTION BODY
 	w.Header().Set("Content-Type", "application/json")
 	if len(request.Body) <= 140 {
-		chirp, err := cfg.validateChirp(request.Body)
+		chirp, err := cfg.validateChirp(request.Body, id)
 		if err != nil {
 			log.Printf("Error validating chirp: %s", err)
 			w.WriteHeader(500)
@@ -252,7 +259,7 @@ func (cfg *apiConfig) postRevokeHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (cfg *apiConfig) validateChirp(body string) (db.Chirp, error) {
+func (cfg *apiConfig) validateChirp(body string, userID int) (db.Chirp, error) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 
 	words := strings.Split(body, " ")
@@ -261,7 +268,7 @@ func (cfg *apiConfig) validateChirp(body string) (db.Chirp, error) {
 			words[i] = "****"
 		}
 	}
-	chirp, err := cfg.db.CreateChirp(strings.Join(words, " "))
+	chirp, err := cfg.db.CreateChirp(strings.Join(words, " "), userID)
 	return chirp, err
 }
 
