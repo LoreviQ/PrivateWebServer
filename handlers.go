@@ -88,6 +88,42 @@ func (cfg *apiConfig) postChirpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request) {
+	// AUTHENTICATION
+	userID, err := auth.AuthenticateAccessToken(r, cfg.jwtSecret)
+	if err != nil {
+		writeError(w, 401, "Inavlid Token. Please log in again")
+		return
+	}
+
+	// AUTHORIZATION
+	chirpID, err := strconv.Atoi(r.PathValue("chirpID"))
+	if err != nil {
+		writeError(w, 400, "Invalid ID")
+		return
+	}
+	chirp, ok := cfg.db.Chirps[chirpID]
+	if !ok {
+		writeError(w, 404, "No Chirp by that ID")
+		return
+	}
+	if chirp.UserID != userID {
+		writeError(w, 403, "Not Authorised to delete this chirp")
+		return
+	}
+
+	// DELETING CHIRP
+	err = cfg.db.DeleteChirp(chirpID)
+	if err != nil {
+		log.Printf("Error Deleting Chirp: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	// RESPONSE
+	w.WriteHeader(200)
+}
+
 func (cfg *apiConfig) postUserHandler(w http.ResponseWriter, r *http.Request) {
 	// REQUEST
 	type requestStruct struct {

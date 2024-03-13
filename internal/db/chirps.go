@@ -22,3 +22,11 @@ func (db *Database) CreateChirp(chirpText string, userID int) (Chirp, error) {
 	}
 	return db.Chirps[id], err
 }
+
+func (db *Database) DeleteChirp(chirpID int) error {
+	db.mu.Lock()
+	delete(db.Chirps, chirpID)
+	db.mu.Unlock()
+	err := db.writeDB()
+	return err
+}

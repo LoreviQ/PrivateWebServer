@@ -33,6 +33,7 @@ func initialiseServer(cfg apiConfig, mux *http.ServeMux) *http.Server {
 	mux.HandleFunc("POST /api/login", cfg.postLoginHandler)
 	mux.HandleFunc("POST /api/refresh", cfg.postRefreshHandler)
 	mux.HandleFunc("POST /api/revoke", cfg.postRevokeHandler)
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.deleteChirpHandler)
 
 	corsMux := corsMiddleware(mux)
 
