@@ -125,14 +125,10 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	type requestStruct struct {
 		Password string `json:"password"`
 		Email    string `json:"email"`
-		Timeout  int    `json:"expires_in_seconds"`
 	}
 	request, err := decodeRequest(w, r, requestStruct{})
 	if err != nil {
 		return
-	}
-	if request.Timeout == 0 || request.Timeout > 86400 {
-		request.Timeout = 86400
 	}
 
 	// AUTHENTICATE USER
@@ -149,24 +145,32 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// CREATE JWT TOKEN
-	signedToken, err := auth.IssueAccessToken(user.ID, request.Timeout, cfg.jwtSecret)
+	// CREATE JWT TOKENS
+	accessToken, err := auth.IssueAccessToken(user.ID, cfg.jwtSecret)
 	if err != nil {
-		log.Printf("Error Creating Token: %s", err)
+		log.Printf("Error Creating Access Token: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	refreshToken, err := auth.IssueRefreshToken(user.ID, cfg.jwtSecret)
+	if err != nil {
+		log.Printf("Error Creating Refresh Token: %s", err)
 		w.WriteHeader(500)
 		return
 	}
 
 	// RESPONSE
 	type responseStruct struct {
-		ID    int    `json:"id"`
-		Email string `json:"email"`
-		Token string `json:"token"`
+		ID           int    `json:"id"`
+		Email        string `json:"email"`
+		AccessToken  string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 	writeResponse(w, 200, responseStruct{
-		Email: user.Email,
-		ID:    user.ID,
-		Token: signedToken,
+		Email:        user.Email,
+		ID:           user.ID,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	})
 }
 

@@ -29,11 +29,23 @@ func AuthenticateAccessToken(r *http.Request, secret []byte) (int, error) {
 	return idInt, nil
 }
 
-func IssueAccessToken(userID, timeout_seconds int, secret []byte) (string, error) {
+func IssueAccessToken(userID int, secret []byte) (string, error) {
 	claims := jwt.RegisteredClaims{
-		Issuer:    "chirpy",
+		Issuer:    "chirpy-access",
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * time.Duration(timeout_seconds))),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		Subject:   fmt.Sprint(userID),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString(secret)
+	return signedToken, err
+}
+
+func IssueRefreshToken(userID int, secret []byte) (string, error) {
+	claims := jwt.RegisteredClaims{
+		Issuer:    "chirpy-refresh",
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 1440)),
 		Subject:   fmt.Sprint(userID),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
