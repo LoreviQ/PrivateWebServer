@@ -62,7 +62,7 @@ func main() {
 		fileserverHits: 0,
 	}
 	cfg.handleFlags()
-	cfg.db = db.initialiseDatabase(cfg.dbDirectory)
+	cfg.db = db.InitialiseDatabase(cfg.dbDirectory)
 	mux := http.NewServeMux()
 	server := initialiseServer(cfg, mux)
 

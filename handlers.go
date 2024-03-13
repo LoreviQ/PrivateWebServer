@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/LoreviQ/PrivateWebServer/internal/db"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -99,7 +100,7 @@ func (cfg *apiConfig) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	user, err := cfg.db.addUser(request.Email, hash)
+	user, err := cfg.db.AddUser(request.Email, hash)
 	if errors.Is(err, db.ErrTakenEmail) {
 		writeError(w, 400, "This email has already been taken")
 		return
@@ -136,7 +137,7 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// AUTHENTICATE USER
-	user, err := cfg.db.authenticateUser(request.Email, []byte(request.Password))
+	user, err := cfg.db.AuthenticateUser(request.Email, []byte(request.Password))
 	if errors.Is(err, db.ErrInvalidEmail) {
 		writeError(w, 404, "No user with this email")
 		return
@@ -216,7 +217,7 @@ func (cfg *apiConfig) putUserHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	user, err := cfg.db.updateUser(idInt, request.Email, hash)
+	user, err := cfg.db.UpdateUser(idInt, request.Email, hash)
 	if err != nil {
 		log.Printf("Error updating user: %s", err)
 		w.WriteHeader(500)
@@ -243,7 +244,7 @@ func (cfg *apiConfig) validateChirp(body string) (db.Chirp, error) {
 			words[i] = "****"
 		}
 	}
-	chirp, err := cfg.db.createChirp(strings.Join(words, " "))
+	chirp, err := cfg.db.CreateChirp(strings.Join(words, " "))
 	return chirp, err
 }
 

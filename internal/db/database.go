@@ -32,7 +32,7 @@ type User struct {
 	PasswordHash []byte `json:"hash"`
 }
 
-func initialiseDatabase(dbPath string) Database {
+func InitialiseDatabase(dbPath string) Database {
 	db := Database{
 		dbPath: dbPath,
 		Chirps: make(map[int]Chirp),
@@ -50,7 +50,7 @@ func initialiseDatabase(dbPath string) Database {
 	return db
 }
 
-func (db *Database) createChirp(chirpText string) (Chirp, error) {
+func (db *Database) CreateChirp(chirpText string) (Chirp, error) {
 	db.mu.Lock()
 	id := len(db.Chirps) + 1
 	db.Chirps[id] = Chirp{
@@ -66,7 +66,7 @@ func (db *Database) createChirp(chirpText string) (Chirp, error) {
 	return db.Chirps[id], err
 }
 
-func (db *Database) addUser(email string, hash []byte) (User, error) {
+func (db *Database) AddUser(email string, hash []byte) (User, error) {
 	db.mu.Lock()
 	for _, user := range db.Users {
 		if user.Email == email {
@@ -88,7 +88,7 @@ func (db *Database) addUser(email string, hash []byte) (User, error) {
 	return db.Users[id], err
 }
 
-func (db *Database) updateUser(id int, email string, hash []byte) (User, error) {
+func (db *Database) UpdateUser(id int, email string, hash []byte) (User, error) {
 	db.mu.Lock()
 	db.Users[id] = User{
 		ID:           id,
@@ -103,7 +103,7 @@ func (db *Database) updateUser(id int, email string, hash []byte) (User, error) 
 	return db.Users[id], err
 }
 
-func (db *Database) authenticateUser(email string, password []byte) (User, error) {
+func (db *Database) AuthenticateUser(email string, password []byte) (User, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	id := 0
