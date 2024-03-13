@@ -33,7 +33,7 @@ func (cfg *apiConfig) metricsResetHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
-	chirps := make([]Chirp, len(cfg.db.Chirps))
+	chirps := make([]db.Chirp, len(cfg.db.Chirps))
 	for i, chirp := range cfg.db.Chirps {
 		chirps[i-1] = chirp
 	}
@@ -100,7 +100,7 @@ func (cfg *apiConfig) postUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := cfg.db.addUser(request.Email, hash)
-	if errors.Is(err, ErrTakenEmail) {
+	if errors.Is(err, db.ErrTakenEmail) {
 		writeError(w, 400, "This email has already been taken")
 		return
 	} else if err != nil {
@@ -137,10 +137,10 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// AUTHENTICATE USER
 	user, err := cfg.db.authenticateUser(request.Email, []byte(request.Password))
-	if errors.Is(err, ErrInvalidEmail) {
+	if errors.Is(err, db.ErrInvalidEmail) {
 		writeError(w, 404, "No user with this email")
 		return
-	} else if errors.Is(err, ErrIncorrectPassword) {
+	} else if errors.Is(err, db.ErrIncorrectPassword) {
 		writeError(w, 401, "Incorrect Password")
 		return
 	} else if err != nil {
@@ -234,7 +234,7 @@ func (cfg *apiConfig) putUserHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (cfg *apiConfig) validateChirp(body string) (Chirp, error) {
+func (cfg *apiConfig) validateChirp(body string) (db.Chirp, error) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 
 	words := strings.Split(body, " ")

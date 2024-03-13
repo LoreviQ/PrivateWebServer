@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/LoreviQ/PrivateWebServer/internal/db"
 	"github.com/joho/godotenv"
 )
 
@@ -14,7 +15,7 @@ type apiConfig struct {
 	dbDirectory    string
 	jwtSecret      []byte
 	fileserverHits int
-	db             Database
+	db             db.Database
 }
 
 func initialiseServer(cfg apiConfig, mux *http.ServeMux) *http.Server {
@@ -61,7 +62,7 @@ func main() {
 		fileserverHits: 0,
 	}
 	cfg.handleFlags()
-	cfg.db = initialiseDatabase(cfg.dbDirectory)
+	cfg.db = db.initialiseDatabase(cfg.dbDirectory)
 	mux := http.NewServeMux()
 	server := initialiseServer(cfg, mux)
 
