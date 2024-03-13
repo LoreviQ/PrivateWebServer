@@ -9,11 +9,13 @@ import (
 var ErrTakenEmail = errors.New("email already taken")
 var ErrInvalidEmail = errors.New("invalid email address")
 var ErrIncorrectPassword = errors.New("inocrrect password")
+var ErrInvalidUserID = errors.New("invalid user ID")
 
 type User struct {
 	ID           int    `json:"id"`
 	Email        string `json:"email"`
 	PasswordHash []byte `json:"hash"`
+	ChirpyRed    bool   `json:"is_chirpy_red"`
 }
 
 func (db *Database) AddUser(email string, hash []byte) (User, error) {
@@ -29,6 +31,7 @@ func (db *Database) AddUser(email string, hash []byte) (User, error) {
 		ID:           id,
 		Email:        email,
 		PasswordHash: hash,
+		ChirpyRed:    false,
 	}
 	db.mu.Unlock()
 	err := db.writeDB()
@@ -44,6 +47,7 @@ func (db *Database) UpdateUser(id int, email string, hash []byte) (User, error) 
 		ID:           id,
 		Email:        email,
 		PasswordHash: hash,
+		ChirpyRed:    db.Users[id].ChirpyRed,
 	}
 	db.mu.Unlock()
 	err := db.writeDB()
@@ -71,4 +75,21 @@ func (db *Database) AuthenticateUser(email string, password []byte) (User, error
 	}
 
 	return db.Users[id], nil
+}
+
+func (db *Database) AddChirpyRed(userID int) error {
+	db.mu.Lock()
+	_, ok := db.Users[userID]
+	if !ok {
+		return ErrInvalidUserID
+	}
+	db.Users[userID] = User{
+		ID:           userID,
+		Email:        db.Users[userID].Email,
+		PasswordHash: db.Users[userID].PasswordHash,
+		ChirpyRed:    true,
+	}
+	db.mu.Unlock()
+	err := db.writeDB()
+	return err
 }

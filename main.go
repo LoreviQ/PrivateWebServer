@@ -26,7 +26,7 @@ func initialiseServer(cfg hdl.ApiConfig, mux *http.ServeMux) *http.Server {
 	mux.HandleFunc("POST /api/refresh", cfg.PostRefreshHandler)
 	mux.HandleFunc("POST /api/revoke", cfg.PostRevokeHandler)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.DeleteChirpHandler)
-	//mux.HandleFunc("POST /api/polka/webhooks", cfg.PostPolkaWebhookHandler)
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.PostPolkaWebhook)
 
 	corsMux := cfg.CorsMiddleware(mux)
 

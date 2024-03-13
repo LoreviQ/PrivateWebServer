@@ -40,12 +40,14 @@ func (cfg *ApiConfig) PostUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// RESPONSE
 	type responseStruct struct {
-		Email string `json:"email"`
-		ID    int    `json:"id"`
+		Email     string `json:"email"`
+		ID        int    `json:"id"`
+		ChirpyRed bool   `json:"is_chirpy_red"`
 	}
 	writeResponse(w, 201, responseStruct{
-		Email: user.Email,
-		ID:    user.ID,
+		Email:     user.Email,
+		ID:        user.ID,
+		ChirpyRed: user.ChirpyRed,
 	})
 }
 
@@ -83,11 +85,13 @@ func (cfg *ApiConfig) PutUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// RESPONSE
 	type responseStruct struct {
-		Email string `json:"email"`
-		ID    int    `json:"id"`
+		Email     string `json:"email"`
+		ID        int    `json:"id"`
+		ChirpyRed bool   `json:"is_chirpy_red"`
 	}
 	writeResponse(w, 200, responseStruct{
-		Email: user.Email,
-		ID:    user.ID,
+		Email:     user.Email,
+		ID:        user.ID,
+		ChirpyRed: user.ChirpyRed,
 	})
 }

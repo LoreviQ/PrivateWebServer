@@ -51,14 +51,16 @@ func (cfg *ApiConfig) PostLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// RESPONSE
 	type responseStruct struct {
-		ID           int    `json:"id"`
 		Email        string `json:"email"`
+		ID           int    `json:"id"`
+		ChirpyRed    bool   `json:"is_chirpy_red"`
 		AccessToken  string `json:"token"`
 		RefreshToken string `json:"refresh_token"`
 	}
 	writeResponse(w, 200, responseStruct{
 		Email:        user.Email,
 		ID:           user.ID,
+		ChirpyRed:    user.ChirpyRed,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	})
