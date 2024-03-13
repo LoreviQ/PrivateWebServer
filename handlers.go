@@ -12,7 +12,6 @@ import (
 
 	"github.com/LoreviQ/PrivateWebServer/internal/auth"
 	"github.com/LoreviQ/PrivateWebServer/internal/db"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -173,15 +172,7 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) putUserHandler(w http.ResponseWriter, r *http.Request) {
 	// CHECKING AUTHENTICATION
-	tokenString := strings.Split(r.Header.Get("Authorization"), " ")[1]
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return cfg.jwtSecret, nil
-	})
-	if err != nil || !token.Valid {
-		writeError(w, 401, "Inavlid Token. Please log in again")
-		return
-	}
-	id, err := token.Claims.GetSubject()
+	id, err := auth.AuthenticateAccessToken(r, cfg.jwtSecret)
 	if err != nil {
 		writeError(w, 401, "Inavlid Token. Please log in again")
 		return
@@ -204,13 +195,7 @@ func (cfg *apiConfig) putUserHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	idInt, err := strconv.Atoi(id)
-	if err != nil {
-		log.Printf("Error parsing ID: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	user, err := cfg.db.UpdateUser(idInt, request.Email, hash)
+	user, err := cfg.db.UpdateUser(id, request.Email, hash)
 	if err != nil {
 		log.Printf("Error updating user: %s", err)
 		w.WriteHeader(500)
