@@ -217,6 +217,31 @@ func (cfg *apiConfig) putUserHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (cfg *apiConfig) postRefreshHandler(w http.ResponseWriter, r *http.Request) {
+	// CHECKING AUTHENTICATION
+	id, err := auth.AuthenticateRefreshToken(r, cfg.jwtSecret, cfg.db)
+	if err != nil {
+		writeError(w, 401, "Inavlid Token. Please log in again")
+		return
+	}
+
+	// CREATE JWT TOKENS
+	accessToken, err := auth.IssueAccessToken(id, cfg.jwtSecret)
+	if err != nil {
+		log.Printf("Error Creating Access Token: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	// RESPONSE
+	type responseStruct struct {
+		Token string `json:"token"`
+	}
+	writeResponse(w, 200, responseStruct{
+		Token: accessToken,
+	})
+}
+
 func (cfg *apiConfig) validateChirp(body string) (db.Chirp, error) {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 
