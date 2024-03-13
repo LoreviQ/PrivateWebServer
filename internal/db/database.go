@@ -9,10 +9,11 @@ import (
 )
 
 type Database struct {
-	dbPath string        `json:"-"`
-	Chirps map[int]Chirp `json:"chirps"`
-	Users  map[int]User  `json:"users"`
-	mu     *sync.RWMutex `json:"-"`
+	dbPath string           `json:"-"`
+	Chirps map[int]Chirp    `json:"chirps"`
+	Users  map[int]User     `json:"users"`
+	Tokens map[string]Token `json:"tokens"`
+	mu     *sync.RWMutex    `json:"-"`
 }
 
 func InitialiseDatabase(dbPath string) Database {
@@ -20,6 +21,7 @@ func InitialiseDatabase(dbPath string) Database {
 		dbPath: dbPath,
 		Chirps: make(map[int]Chirp),
 		Users:  make(map[int]User),
+		Tokens: make(map[string]Token),
 		mu:     &sync.RWMutex{},
 	}
 	err := db.ensureDB()

@@ -152,7 +152,7 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	refreshToken, err := auth.IssueRefreshToken(user.ID, cfg.jwtSecret)
+	refreshToken, err := auth.IssueRefreshToken(user.ID, cfg.jwtSecret, cfg.db)
 	if err != nil {
 		log.Printf("Error Creating Refresh Token: %s", err)
 		w.WriteHeader(500)
