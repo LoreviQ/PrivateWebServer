@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func issueAccessToken(userID, timeout_seconds int, secret []byte) (string, error) {
+func IssueAccessToken(userID, timeout_seconds int, secret []byte) (string, error) {
 	claims := jwt.RegisteredClaims{
 		Issuer:    "chirpy",
 		IssuedAt:  jwt.NewNumericDate(time.Now()),

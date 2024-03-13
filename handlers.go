@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/LoreviQ/PrivateWebServer/internal/auth"
 	"github.com/LoreviQ/PrivateWebServer/internal/db"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -150,7 +151,7 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// CREATE JWT TOKEN
-	signedToken, err := auth.issueAccessToken(user.ID, request.Timeout, cfg.jwtSecret)
+	signedToken, err := auth.IssueAccessToken(user.ID, request.Timeout, cfg.jwtSecret)
 	if err != nil {
 		log.Printf("Error Creating Token: %s", err)
 		w.WriteHeader(500)
