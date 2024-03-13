@@ -243,7 +243,7 @@ func (cfg *apiConfig) postRefreshHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (cfg *apiConfig) postRevokeHandler(w http.ResponseWriter, r *http.Request) {
-	err := auth.RevokeRefreshToken(r, cfg.db)
+	err := cfg.db.RevokeToken(strings.Split(r.Header.Get("Authorization"), " ")[1])
 	if err != nil {
 		log.Printf("Error Revoking Token: %s", err)
 		w.WriteHeader(500)

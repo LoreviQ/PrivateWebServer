@@ -105,17 +105,3 @@ func AuthenticateRefreshToken(r *http.Request, secret []byte, db db.Database) (i
 
 	return idInt, nil
 }
-
-func RevokeRefreshToken(r *http.Request, db db.Database) error {
-	tokenString := strings.Split(r.Header.Get("Authorization"), " ")[1]
-	tokenStruct, ok := db.Tokens[tokenString]
-	if !ok {
-		return errors.New("token does not exist")
-	}
-	if !tokenStruct.Valid {
-		return errors.New("token already revoked")
-	}
-	tokenStruct.Valid = false
-	tokenStruct.RevocationTime = time.Now()
-	return nil
-}
