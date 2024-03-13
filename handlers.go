@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/LoreviQ/PrivateWebServer/internal/db"
 	"github.com/golang-jwt/jwt/v5"
@@ -151,14 +150,7 @@ func (cfg *apiConfig) postLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// CREATE JWT TOKEN
-	claims := jwt.RegisteredClaims{
-		Issuer:    "chirpy",
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * time.Duration(request.Timeout))),
-		Subject:   fmt.Sprint(user.ID),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(cfg.jwtSecret)
+	signedToken, err := auth.issueAccessToken(user.ID, request.Timeout, cfg.jwtSecret)
 	if err != nil {
 		log.Printf("Error Creating Token: %s", err)
 		w.WriteHeader(500)
