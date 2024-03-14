@@ -12,9 +12,23 @@ import (
 )
 
 func (cfg *ApiConfig) GetChirpHandler(w http.ResponseWriter, r *http.Request) {
-	chirps := make([]db.Chirp, len(cfg.DB.Chirps))
-	for i, chirp := range cfg.DB.Chirps {
-		chirps[i-1] = chirp
+	authorID := r.URL.Query().Get("author_id")
+	chirps := make([]db.Chirp, 0, len(cfg.DB.Chirps))
+	if authorID == "" {
+		for _, chirp := range cfg.DB.Chirps {
+			chirps = append(chirps, chirp)
+		}
+	} else {
+		id, err := strconv.Atoi(authorID)
+		if err != nil {
+			writeError(w, 400, "Invalid ID")
+			return
+		}
+		for _, chirp := range cfg.DB.Chirps {
+			if chirp.UserID == id {
+				chirps = append(chirps, chirp)
+			}
+		}
 	}
 	writeResponse(w, 200, chirps)
 }
