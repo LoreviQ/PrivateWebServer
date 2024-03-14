@@ -3,6 +3,9 @@ package hdl
 import (
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/LoreviQ/PrivateWebServer/internal/auth"
 )
 
 func (cfg *ApiConfig) PostPolkaWebhook(w http.ResponseWriter, r *http.Request) {
@@ -17,6 +20,13 @@ func (cfg *ApiConfig) PostPolkaWebhook(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error decoding Request: %s", err)
 		w.WriteHeader(500)
+		return
+	}
+
+	// AUTHENTICATION
+	err = auth.AuthenticateAPI(r, os.Getenv("POLKA_API_KEY"))
+	if err != nil {
+		w.WriteHeader(401)
 		return
 	}
 

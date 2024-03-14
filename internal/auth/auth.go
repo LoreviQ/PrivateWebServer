@@ -105,3 +105,14 @@ func AuthenticateRefreshToken(r *http.Request, secret []byte, db db.Database) (i
 
 	return idInt, nil
 }
+
+func AuthenticateAPI(r *http.Request, expected string) error {
+	apiKey := strings.Split(r.Header.Get("Authorization"), " ")
+	if apiKey[0] != "ApiKey" {
+		return errors.New("wrong auth type")
+	}
+	if apiKey[1] != expected {
+		return errors.New("invalid api key")
+	}
+	return nil
+}
