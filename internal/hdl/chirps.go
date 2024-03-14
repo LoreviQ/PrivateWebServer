@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -12,7 +13,11 @@ import (
 )
 
 func (cfg *ApiConfig) GetChirpHandler(w http.ResponseWriter, r *http.Request) {
+	// QUERY PARAMETERS
 	authorID := r.URL.Query().Get("author_id")
+	sortParam := r.URL.Query().Get("sort")
+
+	// GET SLICE OF CHIRPS
 	chirps := make([]db.Chirp, 0, len(cfg.DB.Chirps))
 	if authorID == "" {
 		for _, chirp := range cfg.DB.Chirps {
@@ -30,6 +35,16 @@ func (cfg *ApiConfig) GetChirpHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	//SORT CHIRPS
+	sort.Slice(chirps, func(i, j int) bool {
+		return chirps[i].ID < chirps[j].ID
+	})
+	if sortParam == "desc" {
+		slices.Reverse(chirps)
+	}
+
+	//RESPONSE
 	writeResponse(w, 200, chirps)
 }
 
